@@ -6,11 +6,13 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 
 	marked.setOptions(markedOpts);
 
-	return root => {
-		let promises = Promise.resolve();
+	const promises = new WeakMap();
 
-		root.walk(node => {
-			if (node.type === 'element' && node.attrs.contains('md')) {
+	return {
+		Element(node, result) {
+			let promise = promises.get(result) || Promise.resolve();
+
+			if (node.attrs.contains('md')) {
 				const innerHTML = node.sourceInnerHTML;
 
 				// detect the initial indentation
@@ -24,7 +26,7 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 				const markedHTML = marked(unindentedHTML).trim();
 
 				// reprocess the marked html as nodes
-				promises = promises.then(
+				promise = promise.then(
 					() => new Result(markedHTML, { from: node.source.from }).root
 				).then(markedRoot => {
 					// conditionally strip the wrapping block when in a strict blocking element
@@ -41,10 +43,13 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 					// append the marked nodes
 					node.nodes.splice(0, node.nodes.length, ...replacementNodes);
 				});
-			}
-		});
 
-		return promises;
+				promises.set(result, promise);
+			}
+		},
+		Root(root, result) {
+			return promises.get(result);
+		}
 	};
 });
 
