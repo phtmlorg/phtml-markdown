@@ -2,6 +2,16 @@ import marked from 'marked';
 import phtml, { Result } from 'phtml';
 
 export default new phtml.Plugin('phtml-markdown', opts => {
+	const markdownAttributes = 'attr' in Object(opts)
+		? [].concat(opts.attr || [])
+	: ['md', 'markdown'];
+	const removeMarkdownAttributes = ('removeAttr' in Object(opts)
+		? opts.removeAttr === true
+			? markdownAttributes
+		: opts.removeAttr === false
+			? []
+		: [].concat(opts.removeAttr || [])
+	: markdownAttributes).filter(removeMarkdownAttribute => markdownAttributes.includes(removeMarkdownAttribute));
 	const markedOpts = Object(opts).marked;
 
 	marked.setOptions(markedOpts);
@@ -11,8 +21,9 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 	return {
 		Element(node, result) {
 			let promise = promises.get(result) || Promise.resolve();
+			const hasMarkdownAttribute = markdownAttributes.some(markdownAttribute => node.attrs.contains(markdownAttribute));
 
-			if (node.attrs.contains('md')) {
+			if (hasMarkdownAttribute) {
 				const innerHTML = node.sourceInnerHTML;
 
 				// detect the initial indentation
@@ -26,22 +37,24 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 				const markedHTML = marked(unindentedHTML).trim();
 
 				// reprocess the marked html as nodes
-				promise = promise.then(
-					() => new Result(markedHTML, { from: node.source.from }).root
-				).then(markedRoot => {
+				promise = promise.then(() => {
+					const markedRoot = new Result(markedHTML, { from: node.source.from }).root;
+
 					// conditionally strip the wrapping block when in a strict blocking element
 					const shouldStripBlock = stripBlockFromRegExp.test(node.name);
 					const hasMultipleNodes = markedRoot.nodes.length > 1;
 
-					const replacementNodes = shouldStripBlock && !hasMultipleNodes
-						? markedRoot.first.nodes
-					: markedRoot.nodes
+					const replacementContainer = shouldStripBlock && !hasMultipleNodes
+						? markedRoot.first
+					: markedRoot;
 
-					// remove the md attribute
-					node.attrs.remove('md');
+					// remove the markdown attribute
+					removeMarkdownAttributes.forEach(markdownAttribute => {
+						node.attrs.remove(markdownAttribute);
+					});
 
 					// append the marked nodes
-					node.nodes.splice(0, node.nodes.length, ...replacementNodes);
+					node.replaceAll(...replacementContainer.nodes);
 				});
 
 				promises.set(result, promise);

@@ -7,11 +7,9 @@
 [pHTML Markdown] lets you write markdown in HTML.
 
 ```html
-<h1 md>
-  PostCSS **Markdown**
-</h1>
-<div md>
-  Make it clear.
+<h1 markdown>pHTML **Markdown**</h1>
+<div markdown>
+  ### Make it clear.
 
   Integrate this love and fear.
   
@@ -22,16 +20,24 @@
 
 <!-- becomes -->
 
-<h1>
-  PostCSS <strong>Markdown</strong>
-</h1>
-<div><p>Make it clear.</p>
-<p>Integrate this love and fear.</p>
-<p>Still hopelessly hopeful.</p>
-<p>Wounded child seeking wonderful.</p></div>
+<h1>pHTML <strong>Markdown</strong></h1>
+<div>
+  <h3 id="make-it-clear">Make it clear.</h3>
+  <p>Integrate this love and fear.</p>
+  <p>Still hopelessly hopeful.</p>
+  <p>Wounded child seeking wonderful.</p>
+</div>
 ```
 
 ## Usage
+
+Transform HTML files directly from the command line:
+
+```bash
+npx phtml source.html output.html -p @phtml/markdown
+```
+
+### Node
 
 Add [pHTML Markdown] to your project:
 
@@ -65,20 +71,73 @@ phtml([
 
 ## Options
 
-### marked
+### attr
 
-The `marked` option passes options into [marked](https://marked.js.org/#/USING_ADVANCED.md#options).
+The `attr` option defines attributes used to trigger Markdown parsing. By
+default, content of elements using `md` or `markdown` attributes are parsed as
+Markdown.
 
 ```js
-phtmlMarkdown({
-  marked: {
-    headerIds: false
-  }
-})
+// parse the content of elements with a data-markdown attribute
+phtmlMarkdown({ attr: 'data-markdown' })
+
+// parse the content of elements with data-markdown or data-md attributes
+phtmlMarkdown({ attr: ['data-markdown', 'data-md'] })
 ```
 
 ```html
-<body md>
+<body data-markdown>
+  # You say you want a revolution
+</body>
+```
+
+```html
+<body>
+  <h1>You say you want a revolution</h1>
+</body>
+```
+
+### removeAttr
+
+The `removeAttr` option defines attributes used to trigger Markdown parsing
+that should also be removed. By default, whichever attributes are passed to
+`attr` are used. You might use this if the attribute you are using will also
+be used by the browser or another plugin.
+
+```js
+// remove the md attribute from elements with data-content or md attributes
+phtmlMarkdown({ attr: ['data-content', 'md'], removeAttr: 'md' })
+```
+
+```html
+<p data-markdown>
+  You say you want a **revolution**.
+</p>
+<p md>
+  Well, you _know_.
+</p>
+```
+
+```html
+<p data-markdown>
+  You say you want a <strong>revolution</strong>.
+</p>
+<p>
+  Well, you <em>know</em>.
+</p>
+```
+
+### marked
+
+The `marked` option defines options passed into
+[marked](https://marked.js.org/#/USING_ADVANCED.md#options).
+
+```js
+phtmlMarkdown({ marked: { headerIds: false } })
+```
+
+```html
+<body markdown>
   # You say you want a revolution
 </body>
 ```
