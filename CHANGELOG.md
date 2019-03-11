@@ -1,5 +1,9 @@
 # Changes to pHTML Markdown
 
+### 2.1.2 (March 11, 2019)
+
+- Fixed: Another issue with re-applying observers
+
 ### 2.1.1 (March 11, 2019)
 
 - Fixed: An issue with re-applying observers

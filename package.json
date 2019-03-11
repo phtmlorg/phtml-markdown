@@ -1,6 +1,6 @@
 {
   "name": "@phtml/markdown",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Write markdown in HTML",
   "author": "Jonathan Neal <jonathantneal@hotmail.com>",
   "license": "CC0-1.0",
@@ -45,7 +45,9 @@
     "extends": "dev",
     "parser": "babel-eslint",
     "rules": {
-      "consistent-return": [0]
+      "consistent-return": [
+        0
+      ]
     }
   },
   "keywords": [

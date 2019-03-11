@@ -1,5 +1,5 @@
 import marked from 'marked';
-import phtml, { Result } from 'phtml';
+import phtml from 'phtml';
 
 export default new phtml.Plugin('phtml-markdown', opts => {
 	const markdownAttributes = 'attr' in Object(opts)
@@ -17,11 +17,11 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 	marked.setOptions(markedOpts);
 
 	return {
-		Element(node) {
+		Element(node, result) {
 			const hasMarkdownAttribute = markdownAttributes.some(markdownAttribute => node.attrs.contains(markdownAttribute));
 
 			if (hasMarkdownAttribute) {
-				const innerHTML = node.sourceInnerHTML;
+				const innerHTML = node.innerHTML;
 
 				// detect the initial indentation
 				const indentation = innerHTML.match(/^\n*(\s*)/)[1];
@@ -34,7 +34,7 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 				const markedHTML = marked(unindentedHTML).trim();
 
 				// reprocess the marked html as nodes
-				const markedRoot = new Result(markedHTML, { from: node.source.from }).root;
+				const markedRoot = new result.constructor(markedHTML, { from: node.source.from }).root;
 
 				// conditionally strip the wrapping block when in a strict blocking element
 				const shouldStripBlock = stripBlockFromRegExp.test(node.name);
