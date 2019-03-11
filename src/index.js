@@ -16,11 +16,8 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 
 	marked.setOptions(markedOpts);
 
-	const promises = new WeakMap();
-
 	return {
-		Element(node, result) {
-			let promise = promises.get(result) || Promise.resolve();
+		Element(node) {
 			const hasMarkdownAttribute = markdownAttributes.some(markdownAttribute => node.attrs.contains(markdownAttribute));
 
 			if (hasMarkdownAttribute) {
@@ -37,31 +34,31 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 				const markedHTML = marked(unindentedHTML).trim();
 
 				// reprocess the marked html as nodes
-				promise = promise.then(() => {
-					const markedRoot = new Result(markedHTML, { from: node.source.from }).root;
+				const markedRoot = new Result(markedHTML, { from: node.source.from }).root;
 
-					// conditionally strip the wrapping block when in a strict blocking element
-					const shouldStripBlock = stripBlockFromRegExp.test(node.name);
-					const hasMultipleNodes = markedRoot.nodes.length > 1;
+				// conditionally strip the wrapping block when in a strict blocking element
+				const shouldStripBlock = stripBlockFromRegExp.test(node.name);
+				const hasMultipleNodes = markedRoot.nodes.length > 1;
 
-					const replacementContainer = shouldStripBlock && !hasMultipleNodes
-						? markedRoot.first
-					: markedRoot;
+				const replacementContainerNodes = (shouldStripBlock && !hasMultipleNodes
+					? markedRoot.first
+				: markedRoot).nodes.slice(0);
 
-					// remove the markdown attribute
-					removeMarkdownAttributes.forEach(markdownAttribute => {
-						node.attrs.remove(markdownAttribute);
-					});
-
-					// append the marked nodes
-					node.replaceAll(...replacementContainer.nodes);
+				// remove the markdown attribute
+				removeMarkdownAttributes.forEach(markdownAttribute => {
+					node.attrs.remove(markdownAttribute);
 				});
 
-				promises.set(result, promise);
+				// append the marked nodes
+				node.replaceAll(...replacementContainerNodes);
+
+				return replacementContainerNodes.reduce(
+					(childPromise, childNode) => childPromise.then(
+						() => childNode.observe()
+					),
+					Promise.resolve()
+				);
 			}
-		},
-		Root(root, result) {
-			return promises.get(result);
 		}
 	};
 });
