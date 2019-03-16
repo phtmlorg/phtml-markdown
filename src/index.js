@@ -17,10 +17,11 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 	marked.setOptions(markedOpts);
 
 	return {
-		Element(node, result) {
+		Element (node, result) {
 			const hasMarkdownAttribute = markdownAttributes.some(markdownAttribute => node.attrs.contains(markdownAttribute));
 
 			if (hasMarkdownAttribute) {
+				const { constructor: Result } = result;
 				const innerHTML = node.innerHTML;
 
 				// detect the initial indentation
@@ -34,7 +35,7 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 				const markedHTML = marked(unindentedHTML).trim();
 
 				// reprocess the marked html as nodes
-				const markedRoot = new result.constructor(markedHTML, { from: node.source.from }).root;
+				const markedRoot = new Result(markedHTML, { from: node.source.from, visitors: result.visitors }).root;
 
 				// conditionally strip the wrapping block when in a strict blocking element
 				const shouldStripBlock = stripBlockFromRegExp.test(node.name);
@@ -54,7 +55,7 @@ export default new phtml.Plugin('phtml-markdown', opts => {
 
 				return replacementContainerNodes.reduce(
 					(childPromise, childNode) => childPromise.then(
-						() => childNode.observe()
+						() => childNode.visit(result)
 					),
 					Promise.resolve()
 				);
